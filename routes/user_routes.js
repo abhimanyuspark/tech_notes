@@ -2,8 +2,8 @@ const express = require("express");
 const router = express.Router();
 const {
   getAllUsers,
-  postUser,
-  putUser,
+  createUser,
+  updateUser,
   deleteUser,
   deleteMultipleUsers,
   getUser,
@@ -12,9 +12,11 @@ const {
 router
   .route("/")
   .get(getAllUsers)
-  .post(postUser)
-  .put(putUser)
+  .post(createUser)
+  .put(updateUser)
   .delete(deleteUser);
+
+router.route("/delete_multiple").delete(deleteMultipleUsers);
 
 router.get("/:id", getUser);
 

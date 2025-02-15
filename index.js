@@ -28,6 +28,7 @@ app.use(cookieParser());
 
 app.use("/", require("./routes/root"));
 app.use("/users", require("./routes/user_routes"));
+app.use("/notes", require("./routes/note_routes"));
 
 app.all("*", (req, res) => {
   res.status(404);

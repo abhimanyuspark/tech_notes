@@ -1,49 +1,98 @@
 const User = require("../models/User");
+const Note = require("../models/Note");
+const bcrypt = require("bcrypt");
+const asyncHandler = require("express-async-handler");
 
-const getAllUsers = async (req, res) => {
-  const user = await User.find();
-  if (!user) return res.status(204).json({ message: "No Data Found" });
-  res.json(user);
-};
-
-const postUser = async (req, res) => {
-  if (!req?.body)
-    return res.status(400).json({ message: "User details are required" });
-
-  try {
-    const result = await User.create(req.body);
-    res.status(201).json(result);
-  } catch (error) {
-    console.error(error);
+const getAllUsers = asyncHandler(async (_, res) => {
+  const result = await User.find().select("-password").lean();
+  if (!result) {
+    return res.status(204).json({ message: "No Data Found" });
   }
-};
+  res.json(result);
+});
 
-const putUser = async (req, res) => {
-  if (!req?.body?.id)
-    return res.status(400).json({ message: "Id parameter is required" });
+const createUser = asyncHandler(async (req, res) => {
+  const { username, password, roles } = req.body;
+  if (!username || !password || !Array.isArray(roles) || !roles.length) {
+    return res.status(400).json({ message: "Details Are Required" });
+  }
 
-  const user = await User.findOne({ _id: req.body.id }).exec();
-  if (!user) return res.status(204).json({ message: "User not Found" });
+  const dup = await User.findOne({ username }).lean().exec();
+  if (dup) {
+    return res.status(409).json({ message: "User Already Exists" });
+  }
 
-  if (req.body?.username) user.username = req.body?.username;
-  if (req.body?.active) user.active = req.body?.active;
+  const hashpwd = await bcrypt.hash(password, 10);
+
+  const result = await User.create({
+    username,
+    password: hashpwd,
+    roles,
+  });
+  if (result) {
+    res.status(201).json(result);
+  } else {
+    res.status(400).json({ message: "Invalid user data received" });
+  }
+});
+
+const updateUser = asyncHandler(async (req, res) => {
+  const { id, username, password, roles, active } = req.body;
+  if (
+    !id ||
+    !username ||
+    !Array.isArray(roles) ||
+    !roles.length ||
+    typeof active !== "boolean"
+  ) {
+    return res.status(400).json({ mesage: "Details Are Required" });
+  }
+
+  const user = await User.findById(id).exec();
+  if (!user) {
+    res.status(400).json({ message: "User Not Found" });
+  }
+
+  const dup = await User.findOne({ username }).lean().exec();
+  if (dup && dup?._id.toString() !== id) {
+    return res.status(409).json({ message: "User Already Exists" });
+  }
+
+  user.username = username;
+  user.roles = roles;
+  user.active = active;
+
+  if (password) {
+    user.password = await bcrypt.hash(password, 10);
+  }
 
   const result = await user.save();
+  if (result) {
+    res.json(result);
+  }
+});
+
+const deleteUser = asyncHandler(async (req, res) => {
+  const { id } = req.body;
+  if (!id) {
+    res.status(400).json({ message: "Id is required" });
+  }
+
+  const note = await Note.findOne({ user: id }).lean().exec();
+  if (note) {
+    return res.status(400).json({ message: "User has assigned notes" });
+  }
+
+  const user = await User.findById(id).exec();
+  if (!user) {
+    return res.status(400).json({ messqage: "User Not Found" });
+  }
+
+  const result = await user.deleteOne();
   res.json(result);
-};
+});
 
-const deleteUser = async (req, res) => {
-  if (!req?.body?.id)
-    return res.status(400).json({ message: "Id parameter is required" });
-
-  const user = await User.findOne({ _id: req.body.id }).exec();
-  if (!user) return res.status(204).json({ message: "User not Found" });
-
-  const result = await user.deleteOne({ _id: req.body.id });
-  res.json(result);
-};
-
-const deleteMultipleUsers = async (req, res) => {
+const deleteMultipleUsers = asyncHandler(async (req, res) => {
   if (!req?.body?.ids || !Array.isArray(req.body.ids))
     return res
       .status(400)
@@ -54,22 +103,27 @@ const deleteMultipleUsers = async (req, res) => {
     return res.status(204).json({ message: "No Users Found" });
 
   res.json(result);
-};
+});
 
-const getUser = async (req, res) => {
-  if (!req?.params?.id)
+const getUser = asyncHandler(async (req, res) => {
+  if (!req?.params?.id) {
     return res.status(400).json({ message: "Id parameter is required" });
+  }
 
-  const result = await User.findOne({ _id: req.params.id }).exec();
-  if (!result) return res.status(204).json({ message: "User not Found" });
+  const result = await User.findOne({ _id: req.params.id })
+    .select("-password")
+    .exec();
+  if (!result) {
+    return res.status(204).json({ message: "User not Found" });
+  }
 
   res.json(result);
-};
+});
 
 module.exports = {
   getAllUsers,
-  postUser,
-  putUser,
+  createUser,
+  updateUser,
   deleteUser,
   deleteMultipleUsers,
   getUser,
