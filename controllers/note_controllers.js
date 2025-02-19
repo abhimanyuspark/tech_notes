@@ -83,7 +83,7 @@ const updateNote = asyncHandler(async (req, res) => {
 });
 
 const deleteNote = asyncHandler(async (req, res) => {
-  const { id } = req.body;
+  const { id } = req?.params;
 
   // Confirm data
   if (!id) {

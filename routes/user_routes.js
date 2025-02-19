@@ -9,12 +9,9 @@ const {
   getUser,
 } = require("../controllers/user_controllers");
 
-router
-  .route("/")
-  .get(getAllUsers)
-  .post(createUser)
-  .put(updateUser)
-  .delete(deleteUser);
+router.route("/").get(getAllUsers).post(createUser).put(updateUser);
+
+router.delete("/:id", deleteUser);
 
 router.route("/delete_multiple").delete(deleteMultipleUsers);
 
