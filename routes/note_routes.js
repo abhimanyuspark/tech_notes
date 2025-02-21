@@ -7,6 +7,9 @@ const {
   deleteNote,
   getNote,
 } = require("../controllers/note_controllers");
+const verifyJWT = require("../middlewares/verifyJWT");
+
+router.use(verifyJWT);
 
 router.route("/").get(getAllNotes).post(createNote).put(updateNote);
 

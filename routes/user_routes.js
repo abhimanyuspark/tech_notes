@@ -8,6 +8,9 @@ const {
   deleteMultipleUsers,
   getUser,
 } = require("../controllers/user_controllers");
+const verifyJWT = require("../middlewares/verifyJWT");
+
+router.use(verifyJWT);
 
 router.route("/").get(getAllUsers).post(createUser).put(updateUser);
 

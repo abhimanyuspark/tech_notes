@@ -27,6 +27,7 @@ app.use(cookieParser());
 //////////*** routes start ****/////////
 
 app.use("/", require("./routes/root"));
+app.use("/auth", require("./routes/auth_routes"));
 app.use("/users", require("./routes/user_routes"));
 app.use("/notes", require("./routes/note_routes"));
 
