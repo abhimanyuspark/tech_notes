@@ -30,18 +30,18 @@ const login = asyncHandler(async (req, res) => {
       },
     },
     process.env.ACCESS_TOKEN,
-    { expiresIn: "15m" }
+    { expiresIn: "10s" }
   );
 
   const refreshToken = jwt.sign(
     { username: user.username },
     process.env.REFRESH_TOKEN,
-    { expiresIn: "7d" }
+    { expiresIn: "30s" }
   );
 
   res.cookie("jwt", refreshToken, {
     httpOnly: true,
-    sameSite: "Lax", // Use "None" if using HTTPS
+    sameSite: "lax", // Use "None" if using HTTPS
     secure: false, // Must be true in production with HTTPS
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
@@ -52,13 +52,15 @@ const login = asyncHandler(async (req, res) => {
 // * REFRESH TOKEN
 const refresh = asyncHandler(async (req, res) => {
   const cookies = req.cookies;
-  if (!cookies?.jwt) return res.status(401).json({ message: "Unauthorized" });
+  if (!cookies?.jwt)
+    return res.status(401).json({ message: "No Cookie Unauthorized" });
 
   try {
     const decoded = jwt.verify(cookies.jwt, process.env.REFRESH_TOKEN);
 
     const user = await User.findOne({ username: decoded.username }).exec();
-    if (!user) return res.status(401).json({ message: "Unauthorized" });
+    if (!user)
+      return res.status(401).json({ message: "User not found Unauthorized" });
 
     // * Generate a new access token
     const accessToken = jwt.sign(
@@ -69,12 +71,12 @@ const refresh = asyncHandler(async (req, res) => {
         },
       },
       process.env.ACCESS_TOKEN,
-      { expiresIn: "15m" }
+      { expiresIn: "1m" }
     );
 
     res.json({ accessToken });
   } catch (err) {
-    return res.status(403).json({ message: "Forbidden" });
+    return res.status(403).json({ message: "Catch Error Forbidden" });
   }
 });
 
@@ -82,7 +84,7 @@ const refresh = asyncHandler(async (req, res) => {
 const logout = asyncHandler(async (req, res) => {
   const cookies = req.cookies;
   if (!cookies?.jwt) {
-    return res.sendStatus(204); // No Content
+    return res.status(204).json({ message: "No Cookie Unauthorized" }); // No Content
   }
 
   res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
