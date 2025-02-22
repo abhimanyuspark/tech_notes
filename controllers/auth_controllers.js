@@ -41,9 +41,9 @@ const login = asyncHandler(async (req, res) => {
 
   res.cookie("jwt", refreshToken, {
     httpOnly: true,
-    // sameSite: "None",
-    // secure: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: "Lax", // Use "None" if using HTTPS
+    secure: false, // Must be true in production with HTTPS
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
   res.json({ accessToken });
@@ -52,38 +52,30 @@ const login = asyncHandler(async (req, res) => {
 // * REFRESH TOKEN
 const refresh = asyncHandler(async (req, res) => {
   const cookies = req.cookies;
-  if (!cookies?.jwt) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
+  if (!cookies?.jwt) return res.status(401).json({ message: "Unauthorized" });
 
-  const refreshToken = cookies.jwt;
+  try {
+    const decoded = jwt.verify(cookies.jwt, process.env.REFRESH_TOKEN);
 
-  jwt.verify(
-    refreshToken,
-    process.env.REFRESH_TOKEN,
-    asyncHandler(async (err, decoded) => {
-      if (err) return res.status(403).json({ message: "Forbidden" });
+    const user = await User.findOne({ username: decoded.username }).exec();
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-      const user = await User.findOne({ username: decoded.username }).exec();
-      if (!user) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-
-      // * Generate a new access token
-      const accessToken = jwt.sign(
-        {
-          userInfo: {
-            username: user.username,
-            roles: user.roles,
-          },
+    // * Generate a new access token
+    const accessToken = jwt.sign(
+      {
+        userInfo: {
+          username: user.username,
+          roles: user.roles,
         },
-        process.env.ACCESS_TOKEN,
-        { expiresIn: "15m" }
-      );
+      },
+      process.env.ACCESS_TOKEN,
+      { expiresIn: "15m" }
+    );
 
-      res.json({ accessToken });
-    })
-  );
+    res.json({ accessToken });
+  } catch (err) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
 });
 
 // * LOGOUT
@@ -94,7 +86,7 @@ const logout = asyncHandler(async (req, res) => {
   }
 
   res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
-  res.status(204).json({ message: "Cookie removed" });
+  res.status(200).json({ message: "Cookie removed" });
 });
 
 module.exports = { login, refresh, logout };

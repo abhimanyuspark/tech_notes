@@ -13,6 +13,7 @@ const corsOptions = {
       callBack("Not Allwed By Cors");
     }
   },
+  // credentials: true,
 };
 
 module.exports = corsOptions;
