@@ -38,6 +38,7 @@ const createUser = asyncHandler(async (req, res) => {
 
 const updateUser = asyncHandler(async (req, res) => {
   const { id, username, password, roles, active } = req.body;
+
   if (
     !id ||
     !username ||
@@ -45,16 +46,16 @@ const updateUser = asyncHandler(async (req, res) => {
     !roles.length ||
     typeof active !== "boolean"
   ) {
-    return res.status(400).json({ mesage: "Details Are Required" });
+    return res.status(400).json({ message: "Details Are Required" });
   }
 
   const user = await User.findById(id).exec();
   if (!user) {
-    res.status(400).json({ message: "User Not Found" });
+    return res.status(404).json({ message: "User Not Found" });
   }
 
   const dup = await User.findOne({ username }).lean().exec();
-  if (dup && dup?._id.toString() !== id) {
+  if (dup && dup._id.toString() !== id) {
     return res.status(409).json({ message: "User Already Exists" });
   }
 
@@ -67,9 +68,7 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 
   const result = await user.save();
-  if (result) {
-    res.json(result);
-  }
+  return res.json(result);
 });
 
 const deleteUser = asyncHandler(async (req, res) => {
