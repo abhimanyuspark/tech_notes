@@ -30,13 +30,13 @@ const login = asyncHandler(async (req, res) => {
       },
     },
     process.env.ACCESS_TOKEN,
-    { expiresIn: "1m" }
+    { expiresIn: "15m" }
   );
 
   const refreshToken = jwt.sign(
     { username: user.username },
     process.env.REFRESH_TOKEN,
-    { expiresIn: "15m" }
+    { expiresIn: "1d" }
   );
 
   res.cookie("jwt", refreshToken, {
@@ -84,10 +84,10 @@ const refresh = asyncHandler(async (req, res) => {
 const logout = asyncHandler(async (req, res) => {
   const cookies = req.cookies;
   if (!cookies?.jwt) {
-    return res.status(204).json({ message: "No Cookie Unauthorized" }); // No Content
+    return res.status(401).json({ message: "No Cookie Unauthorized" }); // Unauthorized
   }
 
-  res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
+  res.clearCookie("jwt", { httpOnly: true, sameSite: "lax", secure: false });
   res.status(200).json({ message: "Cookie removed" });
 });
 

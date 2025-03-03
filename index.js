@@ -5,7 +5,7 @@ const app = express();
 const path = require("path");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const { logger, errLogger } = require("./middlewares/logger");
+// const { logger, errLogger } = require("./middlewares/logger");
 const corsOptions = require("./config/cors");
 const connectDB = require("./config/DB_connect");
 const PORT = process.env.PORT;
@@ -14,7 +14,7 @@ connectDB();
 
 //////////*** middlewars start ****/////////
 
-app.use(logger);
+// app.use(logger);
 app.use(cors(corsOptions));
 
 app.use("/", express.urlencoded({ extended: false }));
@@ -46,7 +46,7 @@ app.all("*", (req, res) => {
 //////////*** routes end ****/////////
 //////////*** middlewars start ****/////////
 
-app.use(errLogger);
+// app.use(errLogger);
 
 //////////*** middlewars end ****/////////
 

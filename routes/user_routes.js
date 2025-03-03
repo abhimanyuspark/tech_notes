@@ -14,9 +14,9 @@ router.use(verifyJWT);
 
 router.route("/").get(getAllUsers).post(createUser).put(updateUser);
 
-router.delete("/:id", deleteUser);
+router.delete("/delete_multiple", deleteMultipleUsers);
 
-router.route("/delete_multiple").delete(deleteMultipleUsers);
+router.delete("/:id", deleteUser);
 
 router.get("/:id", getUser);
 

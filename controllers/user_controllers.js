@@ -92,16 +92,33 @@ const deleteUser = asyncHandler(async (req, res) => {
 });
 
 const deleteMultipleUsers = asyncHandler(async (req, res) => {
-  if (!req?.body?.ids || !Array.isArray(req.body.ids))
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids)) {
+    return res.status(400).json({
+      message: "Ids parameter is required and should be an array",
+    });
+  }
+
+  // Check if users have assigned notes
+  const usersWithNotes = await Note.find({ user: { $in: ids } })
+    .lean()
+    .exec();
+  if (usersWithNotes.length > 0) {
     return res
       .status(400)
-      .json({ message: "Ids parameter is required and should be an array" });
+      .json({ message: "One or more users have assigned notes" });
+  }
 
-  const result = await User.deleteMany({ _id: { $in: req.body.ids } });
-  if (result.deletedCount === 0)
-    return res.status(204).json({ message: "No Users Found" });
+  // Proceed with deletion
+  const result = await User.deleteMany({ _id: { $in: ids } });
 
-  res.json(result);
+  if (result.deletedCount === 0) {
+    return res
+      .status(404)
+      .json({ message: "No users found with the provided IDs" });
+  }
+
+  res.json({ message: `${result.deletedCount} users deleted successfully` });
 });
 
 const getUser = asyncHandler(async (req, res) => {
