@@ -114,10 +114,30 @@ const getNote = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
+const deleteMultipleNotes = asyncHandler(async (req, res) => {
+  const { ids } = req.body;
+
+  // Confirm data
+  if (!ids || !Array.isArray(ids) || !ids.length) {
+    return res.status(400).json({ message: "Note IDs required" });
+  }
+
+  // Confirm notes exist to delete
+  const notes = await Note.find({ _id: { $in: ids } }).exec();
+
+  if (!notes.length) {
+    return res.status(400).json({ message: "No notes found" });
+  }
+
+  const result = await Note.deleteMany({ _id: { $in: ids } }).exec();
+  res.json(result);
+});
+
 module.exports = {
   getAllNotes,
   createNote,
   updateNote,
   deleteNote,
   getNote,
+  deleteMultipleNotes, // Add the new function here
 };
