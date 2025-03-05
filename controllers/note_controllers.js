@@ -24,7 +24,7 @@ const getAllNotes = asyncHandler(async (req, res) => {
 });
 
 const createNote = asyncHandler(async (req, res) => {
-  const { user, title, text } = req.body;
+  const { user, title, text } = req?.body;
 
   // Confirm data
   if (!user || !title || !text) {
