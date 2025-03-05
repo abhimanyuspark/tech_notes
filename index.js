@@ -15,7 +15,9 @@ connectDB();
 //////////*** middlewars start ****/////////
 
 // app.use(logger);
-app.use(cors(corsOptions));
+app.use(cors(corsOptions)); // ✅ Apply CORS before routes
+// Handle preflight requests manually (optional)
+app.options("*", cors(corsOptions));
 
 app.use("/", express.urlencoded({ extended: false }));
 app.use("/", express.static(path.join(__dirname, "public")));

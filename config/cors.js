@@ -1,18 +1,20 @@
 const whiteList = [
   "http://localhost:3000",
   "http://localhost:5173",
-  "https://tech-notes-beta.vercel.app",
+  "https://tech-notes-react.vercel.app", // Fix: This should be the frontend URL
 ];
 
 const corsOptions = {
   origin: (origin, callBack) => {
-    if (whiteList.indexOf(origin) !== -1 || !origin) {
+    if (!origin || whiteList.includes(origin)) {
       callBack(null, true);
     } else {
-      callBack("Not Allwed By Cors");
+      callBack(new Error("Not Allowed By CORS"));
     }
   },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 module.exports = corsOptions;
