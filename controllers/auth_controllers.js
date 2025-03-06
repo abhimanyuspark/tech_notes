@@ -21,6 +21,11 @@ const login = asyncHandler(async (req, res) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
+  if (!process.env.ACCESS_TOKEN || !process.env.REFRESH_TOKEN) {
+    console.error("Missing token secrets in environment variables.");
+    return res.status(500).json({ message: "Server error" });
+  }
+
   // * Create JWT tokens
   const accessToken = jwt.sign(
     {
@@ -41,9 +46,10 @@ const login = asyncHandler(async (req, res) => {
 
   res.cookie("jwt", refreshToken, {
     httpOnly: true,
-    sameSite: "none", //Use "lax" if HTTP // Use "None" if using HTTPS
-    secure: true, // Must be true in production with HTTPS
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
   res.json({ accessToken });
@@ -51,16 +57,17 @@ const login = asyncHandler(async (req, res) => {
 
 // * REFRESH TOKEN
 const refresh = asyncHandler(async (req, res) => {
-  const cookies = req.cookies;
-  if (!cookies?.jwt)
+  const cookies = req?.cookies;
+  if (!cookies?.jwt) {
     return res.status(401).json({ message: "No Cookie Unauthorized" });
+  }
 
   try {
     const decoded = jwt.verify(cookies.jwt, process.env.REFRESH_TOKEN);
-
     const user = await User.findOne({ username: decoded.username }).exec();
-    if (!user)
+    if (!user) {
       return res.status(401).json({ message: "User not found Unauthorized" });
+    }
 
     // * Generate a new access token
     const accessToken = jwt.sign(
@@ -76,7 +83,10 @@ const refresh = asyncHandler(async (req, res) => {
 
     res.json({ accessToken });
   } catch (err) {
-    return res.status(403).json({ message: "Catch Error Forbidden" });
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Refresh token expired" });
+    }
+    return res.status(403).json({ message: "Invalid refresh token" });
   }
 });
 
@@ -84,11 +94,17 @@ const refresh = asyncHandler(async (req, res) => {
 const logout = asyncHandler(async (req, res) => {
   const cookies = req.cookies;
   if (!cookies?.jwt) {
-    return res.status(401).json({ message: "No Cookie Unauthorized" }); // Unauthorized
+    return res.status(401).json({ message: "No Cookie Unauthorized" });
   }
 
-  res.clearCookie("jwt", { httpOnly: true, sameSite: "none", secure: true });
-  res.status(200).json({ message: "Cookie removed" });
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+
+  res.status(200).json({ message: "Logged out successfully" });
 });
 
 module.exports = { login, refresh, logout };
